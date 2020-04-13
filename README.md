@@ -6,14 +6,13 @@
 
 ```swift
 struct ContentView {
-	@StateDefaults("key", defaultValue: 0) var tapCount
-	
-	var body: some View {
-	Button(
-	"tap \(tapCount)") {
-			self.tapCount += 1
-		}
-	}
+  @StateDefaults("key", defaultValue: 0) var tapCount
+
+  var body: some View {
+  Button("tap \(tapCount)") {
+    self.tapCount += 1
+    }
+  }
 }
 ```
 
