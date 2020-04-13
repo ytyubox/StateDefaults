@@ -2,6 +2,8 @@ import SwiftUI
 /// A property wrapper type that can read and write a value from UserDefaults.standard.
 fileprivate var _StateDefaults = UserDefaults.standard
 
+public typealias AnyStateDefaults = StateDefaults<Any>
+
 @propertyWrapper
 public
 struct StateDefaults<T>:DynamicProperty {
