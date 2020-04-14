@@ -12,9 +12,8 @@ final class StateDefaultsShareTests: XCTestCase {
   func testChangeDefaults() {
     let defaults = UserDefaults(suiteName: "TestingSateDefaults")
     XCTAssertNotNil(defaults)
-    AnyStateDefaults.defaults = defaults!
     
-    let stateDefaultValue = StateDefaults<Int>("text", defaultValue: 1)
+    let stateDefaultValue = StateDefaults<Int>("text", defaultValue: 1, userDefaults: defaults)
     let r = Int.random(in: 0...Int.max)
     stateDefaultValue.wrappedValue = r
     
@@ -24,6 +23,5 @@ final class StateDefaultsShareTests: XCTestCase {
     
     XCTAssertEqual(expect, r)
     
-    AnyStateDefaults.defaults = .standard
   }
 }
