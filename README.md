@@ -16,10 +16,28 @@ struct ContentView {
 }
 ```
 
+
 ## Using Custom UserDefaults
 
 ```swift
-AnyStateDefaults.defaults = myUserDefaults
+@StateDefaults("key", defaultValue: 0, userDefaults: myuserDefaults) var tapCount
+```
+## Avoid Duplicate Key
+```swift
+let p1 = StateDefaults("someKey", defaultValue: 1, userDefaults: defaults)
+let p2 = StateDefaults("someKey", defaultValue: 1, userDefaults: defaults)
+// precondition  "[StateDefault] key: someKey is already a property somewhere in you code. Place make sure you have only one"
+```
+
+However, if the holder of `StateDefaults` can be destroy by arc/stack, it will be fine.
+```swift
+do {
+		_ = StateDefaults("someKey", defaultValue: 1, userDefaults: defaults)
+	}
+	
+	_ = StateDefaults("someKey", defaultValue: 1, userDefaults: defaults)
+}
+// work fine
 ```
 ## Author
 
