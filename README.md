@@ -33,10 +33,10 @@ let p2 = StateDefaults("someKey", defaultValue: 1, userDefaults: defaults)
 However, if the holder of `StateDefaults` can be destroy by arc/stack, it will be fine.
 ```swift
 do {
-		_ = StateDefaults("someKey", defaultValue: 1, userDefaults: defaults)
-	}
+  _ = StateDefaults("someKey", defaultValue: 1, userDefaults: defaults)
+  }
 	
-	_ = StateDefaults("someKey", defaultValue: 1, userDefaults: defaults)
+  _ = StateDefaults("someKey", defaultValue: 1, userDefaults: defaults)
 }
 // work fine
 ```
