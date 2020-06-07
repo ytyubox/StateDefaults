@@ -64,10 +64,7 @@ class StateDefaults<Value>: ObservableObject where Value : Equatable {
     }
     private func defaultsPlistChanged() {
         guard
-            let data = try? Data(contentsOf: preferencesURL),
-            let plist = try? PropertyListSerialization.propertyList(from: data,
-                                                                    options: .mutableContainers,
-                                                                    format: .none) as? [String: Any],
+            let plist = try? getPlist(plistURL: preferencesURL),
             let newValue = plist[key] as? Value,
             value != newValue
             else { return }
@@ -79,6 +76,8 @@ class StateDefaults<Value>: ObservableObject where Value : Equatable {
     }
 }
 
+
+// MARK: - Private helper
 private func getPlistURL(fileManager: FileManager) -> URL {
     guard
         let bundleID = Bundle.main.bundleIdentifier,
