@@ -1,7 +1,7 @@
 import Foundation
 @propertyWrapper
 public
-class StateDefaults<Value>:ObservableObject {
+class StateDefaults<Value>:ObservableObject where Value : Equatable {
     
     
     private var storage: UserDefaults!
@@ -45,7 +45,8 @@ class StateDefaults<Value>:ObservableObject {
     }
     
     @objc private func didReciveUpdate() {
-        if let newValue = storage.object(forKey: key) as? Value, value != newValue {
+        if let newValue = storage.object(forKey: key) as? Value,
+            value != newValue {
             self.value = newValue
         }
     }
