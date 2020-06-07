@@ -1,11 +1,14 @@
 import Foundation
 @propertyWrapper
 public
-class StateDefaults<Value>:ObservableObject where Value : Equatable {
+class StateDefaults<Value>: ObservableObject where Value : Equatable {
     
     
     private var storage: UserDefaults!
     private let key: String
+    private let fileManager = FileManager()
+    private let preferencesURL: URL
+    private var fileMonitor: FileWriteMonitor?
     @Published private var value: Value
     
     public init(
@@ -14,6 +17,7 @@ class StateDefaults<Value>:ObservableObject where Value : Equatable {
         userDefaults: UserDefaults? = .standard
     ) {
         self.key = key
+        self.preferencesURL = getPlistURL(fileManager: fileManager)
         self.storage = userDefaults
         
         defer {
@@ -25,13 +29,21 @@ class StateDefaults<Value>:ObservableObject where Value : Equatable {
                     object: .none)
         }
         
+        
+        // handle default value
+        
         if let valueFromStorage = storage.object(forKey: key) as? Value {
             self._value = Published(wrappedValue: valueFromStorage)
-            return
+        }
+        else {
+            self._value = Published(wrappedValue: defaultValue)
+            storage.set(defaultValue, forKey: key)
         }
         
-        self._value = Published(wrappedValue: defaultValue)
-        storage.set(defaultValue, forKey: key)
+        self.fileMonitor = FileWriteMonitor(preferencesURL) { [weak self] in
+            self?.defaultsPlistChanged()
+        }
+        
     }
     
     public var wrappedValue: Value {
@@ -50,4 +62,39 @@ class StateDefaults<Value>:ObservableObject where Value : Equatable {
             self.value = newValue
         }
     }
+    private func defaultsPlistChanged() {
+        guard
+            let data = try? Data(contentsOf: preferencesURL),
+            let plist = try? PropertyListSerialization.propertyList(from: data,
+                                                                    options: .mutableContainers,
+                                                                    format: .none) as? [String: Any],
+            let newValue = plist[key] as? Value,
+            value != newValue
+            else { return }
+        
+        if storage.object(forKey: key) as? Value != newValue {
+            storage.set(newValue, forKey: self.key)
+            self.value = newValue
+        }
+    }
+}
+
+private func getPlistURL(fileManager: FileManager) -> URL {
+    guard
+        let bundleID = Bundle.main.bundleIdentifier,
+        let preferences = try? fileManager
+            .url(for: .libraryDirectory, in: .userDomainMask, appropriateFor: .none, create: false)
+            .appendingPathComponent("Preferences/\(bundleID).plist")
+        else { fatalError("Could not find the preferences folder.") }
+    
+    return preferences
+}
+
+private func getPlist(plistURL: URL) throws -> [String: Any] {
+    let data = try Data(contentsOf: plistURL)
+    let plist = try PropertyListSerialization.propertyList(
+        from: data,
+        options: .mutableContainers,
+        format: .none)
+    return plist as! [String: Any]
 }
