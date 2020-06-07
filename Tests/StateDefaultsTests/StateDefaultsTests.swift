@@ -2,8 +2,15 @@ import XCTest
 @testable import StateDefaults
 import SwiftUI
 
-struct TestTaget {
-  @StateDefaults("key", defaultValue: "nil") var text
+struct TestTaget
+{
+    static let defaultsText = "nil"
+    @StateDefaults("key", defaultValue: Self.defaultsText) var text
+    
+    func reset()
+    {
+        text = Self.defaultsText
+    }
 }
 
 final class StateDefaultsTests: XCTestCase {
@@ -16,14 +23,14 @@ final class StateDefaultsTests: XCTestCase {
     }
     let get = UserDefaults.standard.string(forKey: "key")
     XCTAssertEqual("Hello, World!", get)
-    target.text = "nil"
+    target.reset()
   }
   func testProjectValue() {
     let target = TestTaget()
     target.text = "Hello, World!"
     let get = UserDefaults.standard.string(forKey: "key")
     XCTAssertEqual("Hello, World!", get)
-     UserDefaults.standard.removeObject(forKey: "key")
+    target.reset()
   }
   
   static var allTests = [
