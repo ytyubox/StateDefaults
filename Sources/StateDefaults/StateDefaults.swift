@@ -2,11 +2,11 @@ import Foundation
 @propertyWrapper
 public
 class StateDefaults<Value>:ObservableObject {
-
     
-    private var storage: UserDefaults
+    
+    private var storage: UserDefaults!
     private let key: String
-    private let defaultValue: Value
+    @Published private var value: Value
     
     public init(
         _ key: String,
@@ -14,19 +14,39 @@ class StateDefaults<Value>:ObservableObject {
         userDefaults: UserDefaults? = .standard
     ) {
         self.key = key
-        self.defaultValue = defaultValue
-        self.storage = userDefaults ?? .standard
-        if storage.object(forKey: key) as? Value == nil {
-            storage.set(defaultValue, forKey: key)
+        self.storage = userDefaults
+        
+        defer {
+            NotificationCenter.default
+                .addObserver(
+                    self,
+                    selector: #selector(didReciveUpdate),
+                    name: UserDefaults.didChangeNotification,
+                    object: .none)
         }
+        
+        if let valueFromStorage = storage.object(forKey: key) as? Value {
+            self._value = Published(wrappedValue: valueFromStorage)
+            return
+        }
+        
+        self._value = Published(wrappedValue: defaultValue)
+        storage.set(defaultValue, forKey: key)
     }
     
     public var wrappedValue: Value {
         get {
-            storage.object(forKey: key) as? Value ?? defaultValue
+            value
         }
         set {
+            self.value = newValue
             storage.set(newValue, forKey: key)
+        }
+    }
+    
+    @objc private func didReciveUpdate() {
+        if let newValue = storage.object(forKey: key) as? Value, value != newValue {
+            self.value = newValue
         }
     }
 }
