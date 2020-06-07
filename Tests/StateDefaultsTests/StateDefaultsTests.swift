@@ -18,9 +18,7 @@ final class StateDefaultsTests: XCTestCase {
     let target = TestTaget()
     XCTAssertEqual(target.text, "nil")
     target.text = "Hello, World!"
-    while !UserDefaults.standard.synchronize() {
-      print("saving")
-    }
+
     let get = UserDefaults.standard.string(forKey: "key")
     XCTAssertEqual("Hello, World!", get)
     target.reset()
