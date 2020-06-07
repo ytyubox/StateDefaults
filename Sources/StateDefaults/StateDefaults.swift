@@ -1,9 +1,8 @@
 import Foundation
 @propertyWrapper
 public
-class StateDefaults<Value>: ObservableObject where Value : Equatable {
-    
-    
+class StateDefaults<Value>: ObservableObject where Value : Equatable
+{
     private var storage: UserDefaults!
     private let key: String
     private let fileManager = FileManager()
@@ -14,13 +13,14 @@ class StateDefaults<Value>: ObservableObject where Value : Equatable {
     public init(
         _ key: String,
         defaultValue: Value,
-        userDefaults: UserDefaults? = .standard
-    ) {
+        userDefaults: UserDefaults? = .standard)
+    {
         self.key = key
         self.preferencesURL = getPlistURL(fileManager: fileManager)
         self.storage = userDefaults
         
-        defer {
+        defer
+        {
             NotificationCenter.default
                 .addObserver(
                     self,
@@ -31,45 +31,50 @@ class StateDefaults<Value>: ObservableObject where Value : Equatable {
         
         
         // handle default value
+        self._value = getPublished(storage: storage, key: key, defaultValue: defaultValue)
         
-        if let valueFromStorage = storage.object(forKey: key) as? Value {
-            self._value = Published(wrappedValue: valueFromStorage)
-        }
-        else {
-            self._value = Published(wrappedValue: defaultValue)
-            storage.set(defaultValue, forKey: key)
-        }
-        
-        self.fileMonitor = FileWriteMonitor(preferencesURL) { [weak self] in
-            self?.defaultsPlistChanged()
+        self.fileMonitor = FileWriteMonitor(preferencesURL)
+        { [unowned self] in
+            self.defaultsPlistChanged()
         }
         
     }
     
-    public var wrappedValue: Value {
-        get {
+    public var wrappedValue: Value
+    {
+        get
+        {
             value
         }
-        set {
+        set
+        {
             self.value = newValue
             storage.set(newValue, forKey: key)
         }
     }
     
-    @objc private func didReciveUpdate() {
-        if let newValue = storage.object(forKey: key) as? Value,
-            value != newValue {
+    @objc private func didReciveUpdate()
+    {
+        if
+            let newValue = storage.object(forKey: key) as? Value,
+            value != newValue
+        {
             self.value = newValue
         }
     }
-    private func defaultsPlistChanged() {
+    private func defaultsPlistChanged()
+    {
         guard
             let plist = try? getPlist(plistURL: preferencesURL),
             let newValue = plist[key] as? Value,
             value != newValue
-            else { return }
+            else
+        {
+            return
+        }
         
-        if storage.object(forKey: key) as? Value != newValue {
+        if storage.object(forKey: key) as? Value != newValue
+        {
             storage.set(newValue, forKey: self.key)
             self.value = newValue
         }
@@ -78,22 +83,49 @@ class StateDefaults<Value>: ObservableObject where Value : Equatable {
 
 
 // MARK: - Private helper
-private func getPlistURL(fileManager: FileManager) -> URL {
+private func getPlistURL(fileManager: FileManager) -> URL
+{
     guard
         let bundleID = Bundle.main.bundleIdentifier,
         let preferences = try? fileManager
-            .url(for: .libraryDirectory, in: .userDomainMask, appropriateFor: .none, create: false)
+            .url(for: .libraryDirectory,
+                 in: .userDomainMask,
+                 appropriateFor: .none,
+                 create: false)
             .appendingPathComponent("Preferences/\(bundleID).plist")
-        else { fatalError("Could not find the preferences folder.") }
+        else
+    {
+        fatalError("Could not find the preferences folder.")
+        
+    }
     
     return preferences
 }
 
-private func getPlist(plistURL: URL) throws -> [String: Any] {
+private func getPlist(plistURL: URL) throws -> [String: Any]
+{
     let data = try Data(contentsOf: plistURL)
-    let plist = try PropertyListSerialization.propertyList(
-        from: data,
-        options: .mutableContainers,
-        format: .none)
+    let plist = try PropertyListSerialization
+        .propertyList(
+            from: data,
+            options: .mutableContainers,
+            format: .none)
     return plist as! [String: Any]
+}
+
+private func getPublished<Value>(
+    storage: UserDefaults,
+    key: String,
+    defaultValue:Value)
+    -> Published<Value>
+{
+    if let valueFromStorage = storage.object(forKey: key) as? Value
+    {
+        return Published(wrappedValue: valueFromStorage)
+    }
+    else
+    {
+        storage.set(defaultValue, forKey: key)
+        return Published(wrappedValue: defaultValue)
+    }
 }
