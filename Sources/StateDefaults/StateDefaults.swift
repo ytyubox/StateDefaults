@@ -53,7 +53,6 @@ class StateDefaults<Value>: ObservableObject where Value : Equatable
         // handle default value
 
         self.defaultValue = defaultValue
-//        self._value = getPublished(storage: storage, key: key, defaultValue: defaultValue)
         
         self.fileMonitor = FileWriteMonitor(preferencesURL)
         { [weak self] in
@@ -84,30 +83,19 @@ class StateDefaults<Value>: ObservableObject where Value : Equatable
     @objc private func didReciveUpdate()
     {
         objectWillChange.send()
-//        if
-//            let newValue = storage.object(forKey: key) as? Value,
-//            value != newValue
-//        {
-//            self.value = newValue
-//        }
     }
     private func defaultsPlistChanged()
     {
         guard
             let plist = try? getPlist(plistURL: preferencesURL),
             let _ = plist[key] as? Value
-//            value != newValue
             else
         {
             return
         }
-//
+
         objectWillChange.send()
-//        if storage.object(forKey: key) as? Value != newValue
-//        {
-//            storage.set(newValue, forKey: self.key)
-//            self.value = newValue
-//        }
+
     }
 }
 
@@ -143,21 +131,9 @@ private func getPlist(plistURL: URL) throws -> [String: Any]
     return plist as! [String: Any]
 }
 
-private func getPublished<Value>(
-    storage: UserDefaults,
-    key: String,
-    defaultValue:Value)
-    -> Published<Value>
-{
-    if let valueFromStorage = storage.object(forKey: key) as? Value
-    {
-        return Published(wrappedValue: valueFromStorage)
-    }
-    
-    storage.set(defaultValue, forKey: key)
-    return Published(wrappedValue: defaultValue)
-    
-}
+
+// MARK: - KissDefaults
+// Idea from https://github.com/lexrus/KissDefault
 private
 func _demangleVariableNameFromCallstack() -> String {
     let stacks = Thread.callStackSymbols
