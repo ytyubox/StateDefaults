@@ -77,7 +77,7 @@ class StateDefaults<Value>: ObservableObject where Value : Equatable
             let key = self.key
             storage.set(newValue, forKey: key)
             print("set",#function,key,newValue)
-            some = (1...20).randomElement()!
+            
         }
     }
     
