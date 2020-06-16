@@ -34,8 +34,8 @@ class StateDefaults<Value>: ObservableObject where Value : Equatable
         self._value = getPublished(storage: storage, key: key, defaultValue: defaultValue)
         
         self.fileMonitor = FileWriteMonitor(preferencesURL)
-        { [unowned self] in
-            self.defaultsPlistChanged()
+        { [weak self] in
+            self?.defaultsPlistChanged()
         }
         
     }
