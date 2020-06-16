@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 
 private var _stateDefaultsTarget:UserDefaults = .standard
 extension UserDefaults {
@@ -17,7 +18,6 @@ public
 class StateDefaults<Value>: ObservableObject where Value : Equatable
 {
     private var storage: UserDefaults!
-    
     private let fileManager = FileManager()
     private let preferencesURL: URL
     private var fileMonitor: FileWriteMonitor?
@@ -25,7 +25,7 @@ class StateDefaults<Value>: ObservableObject where Value : Equatable
     private var key:String {
         if let k = _key {return k}
         self._key = _demangleVariableNameFromCallstack()
-        return _key!
+        return self.key
     }
     internal var _key:String?
     public var projectedValue:StateDefaults<Value> {
@@ -66,15 +66,18 @@ class StateDefaults<Value>: ObservableObject where Value : Equatable
         get
         {
             let key = self.key
-            print(key)
-            return storage.value(forKey: key) as? Value ?? defaultValue
+            let newValue = storage.value(forKey: key) as? Value ?? defaultValue
+            print("get",#function,key,newValue)
+            return newValue
         }
+     
         set
         {
-            self.objectWillChange.send()
+            objectWillChange.send()
             let key = self.key
-            print(key)
             storage.set(newValue, forKey: key)
+            print("set",#function,key,newValue)
+            some = (1...20).randomElement()!
         }
     }
     
@@ -82,7 +85,7 @@ class StateDefaults<Value>: ObservableObject where Value : Equatable
     
     @objc private func didReciveUpdate()
     {
-        objectWillChange.send()
+//        objectWillChange.send()
     }
     private func defaultsPlistChanged()
     {
