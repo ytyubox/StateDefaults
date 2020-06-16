@@ -9,19 +9,19 @@ import XCTest
 import StateDefaults
 
 final class StateDefaultsShareTests: XCTestCase {
-  func testChangeDefaults() {
-    let defaults = UserDefaults(suiteName: "TestingSateDefaults")
-    XCTAssertNotNil(defaults)
-    
-    let stateDefaultValue = StateDefaults<Int>("text", defaultValue: 1, userDefaults: defaults)
-    let r = Int.random(in: 0...Int.max)
-    stateDefaultValue.wrappedValue = r
-    
-    sleep(1)
-    
-    let expect = defaults?.integer(forKey: "text")
-    
-    XCTAssertEqual(expect, r)
-    
-  }
+    func testChangeDefaults() {
+        let defaults = UserDefaults(suiteName: "TestingSateDefaults")
+        XCTAssertNotNil(defaults)
+        
+        let stateDefaultValue = StateDefaults<Int>(
+            "text",
+            defaultValue: 1,
+            userDefaults: defaults)
+        let r = Int.random(in: 0...Int.max)
+        stateDefaultValue.wrappedValue = r
+        
+        let expect = defaults?.integer(forKey: "text")
+        
+        XCTAssertEqual(expect, r)
+    }
 }
