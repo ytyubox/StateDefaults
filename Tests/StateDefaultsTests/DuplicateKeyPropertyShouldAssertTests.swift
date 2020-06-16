@@ -4,10 +4,10 @@ import StateDefaults
 
 final class DuplicateKeyPropertyShouldAssertTests: XCTestCase {
   func testduplicateTheSame() {
-    let target1 = TestTaget()
-    let target2 = TestTaget()
-    target1.text = "newText"
-    XCTAssertEqual(target1.text, target2.text)
+    let target1 = TestTarget()
+    let target2 = TestTarget()
+    target1.mytext = "newText"
+    XCTAssertEqual(target1.mytext, target2.mytext)
     target1.reset()
   }
 }

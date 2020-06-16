@@ -1,21 +1,41 @@
 import Foundation
+
+private var _stateDefaultsTarget:UserDefaults = .standard
+extension UserDefaults {
+    public static var costomStandard:UserDefaults {
+        get {
+            return _stateDefaultsTarget
+        }
+        set {
+            _stateDefaultsTarget = newValue
+        }
+    }
+}
+
 @propertyWrapper
 public
 class StateDefaults<Value>: ObservableObject where Value : Equatable
 {
     private var storage: UserDefaults!
-    private let key: String
+    
     private let fileManager = FileManager()
     private let preferencesURL: URL
     private var fileMonitor: FileWriteMonitor?
-    @Published private var value: Value
+    private let defaultValue:Value
+    private var key:String {
+        if let k = _key {return k}
+        self._key = _demangleVariableNameFromCallstack()
+        return _key!
+    }
+    internal var _key:String?
+    public var projectedValue:StateDefaults<Value> {
+        self
+    }
     
     public init(
-        _ key: String,
         defaultValue: Value,
-        userDefaults: UserDefaults? = .standard)
+        userDefaults: UserDefaults? = .costomStandard)
     {
-        self.key = key
         self.preferencesURL = getPlistURL(fileManager: fileManager)
         self.storage = userDefaults
         
@@ -31,7 +51,9 @@ class StateDefaults<Value>: ObservableObject where Value : Equatable
         
         
         // handle default value
-        self._value = getPublished(storage: storage, key: key, defaultValue: defaultValue)
+
+        self.defaultValue = defaultValue
+//        self._value = getPublished(storage: storage, key: key, defaultValue: defaultValue)
         
         self.fileMonitor = FileWriteMonitor(preferencesURL)
         { [weak self] in
@@ -44,40 +66,48 @@ class StateDefaults<Value>: ObservableObject where Value : Equatable
     {
         get
         {
-            value
+            let key = self.key
+            print(key)
+            return storage.value(forKey: key) as? Value ?? defaultValue
         }
         set
         {
-            self.value = newValue
+            self.objectWillChange.send()
+            let key = self.key
+            print(key)
             storage.set(newValue, forKey: key)
         }
     }
     
+    
+    
     @objc private func didReciveUpdate()
     {
-        if
-            let newValue = storage.object(forKey: key) as? Value,
-            value != newValue
-        {
-            self.value = newValue
-        }
+        objectWillChange.send()
+//        if
+//            let newValue = storage.object(forKey: key) as? Value,
+//            value != newValue
+//        {
+//            self.value = newValue
+//        }
     }
     private func defaultsPlistChanged()
     {
         guard
             let plist = try? getPlist(plistURL: preferencesURL),
-            let newValue = plist[key] as? Value,
-            value != newValue
+            let _ = plist[key] as? Value
+//            value != newValue
             else
         {
             return
         }
-        
-        if storage.object(forKey: key) as? Value != newValue
-        {
-            storage.set(newValue, forKey: self.key)
-            self.value = newValue
-        }
+//
+        objectWillChange.send()
+//        if storage.object(forKey: key) as? Value != newValue
+//        {
+//            storage.set(newValue, forKey: self.key)
+//            self.value = newValue
+//        }
     }
 }
 
@@ -123,9 +153,83 @@ private func getPublished<Value>(
     {
         return Published(wrappedValue: valueFromStorage)
     }
-    else
-    {
-        storage.set(defaultValue, forKey: key)
-        return Published(wrappedValue: defaultValue)
+    
+    storage.set(defaultValue, forKey: key)
+    return Published(wrappedValue: defaultValue)
+    
+}
+private
+func _demangleVariableNameFromCallstack() -> String {
+    let stacks = Thread.callStackSymbols
+    //     Since we have the source code, we may guarantee the property name is located in the 3rd symbol
+    //     0 KissDefault 0x0000000100001db4 #demangleWrappedName
+    //     1 KissDefault 0x0000000100001769 $s11KissDefault0A0V12wrappedValuexvg + 254
+    //     2 KissDefault 0x0000000100002efb $s11KissDefault3StrV9staticVarSSvgZ + 235  <- real property
+    guard stacks.count > 3 else {
+        assertionFailure()
+        return ""
+    }
+    
+    let stack = stacks[3]
+    
+    guard let symbolRange = stack.range(
+        of: #"\$s\S+"#,
+        options: [.regularExpression, .caseInsensitive]
+        ) else {
+            assertionFailure()
+            return ""
+    }
+    
+    let symbol = String(stack[symbolRange])
+    
+    return _demangleVariableName(of: symbol)
+}
+private
+func _demangleVariableName(of symbol: String) -> String {
+    let ranges = symbol.ranges(of: "[VC]\\d+(?=\\D.*[sSA35])")
+    
+    let invalidCharacterSet = CharacterSet(charactersIn: " +")
+    
+    for range in ranges {
+        let sub = symbol[range]
+        
+        guard sub.hasPrefix("V") || sub.hasPrefix("C") else {
+            continue
+        }
+        
+        let countStr = sub.trimmingCharacters(in: CharacterSet.decimalDigits.inverted)
+        
+        guard countStr.count > 0, let count = Int(countStr), count > 0 else {
+            continue
+        }
+        
+        guard sub.endIndex.utf16Offset(in: symbol) + count <= symbol.count else {
+            continue
+        }
+        
+        let variableRange = sub.endIndex ..< symbol.index(sub.endIndex, offsetBy: count)
+        let variableName = symbol[variableRange]
+        
+        if variableName.count == count, variableName.trimmingCharacters(in: invalidCharacterSet).count == count {
+            return String(variableName)
+        }
+    }
+    
+    // Failover
+    return symbol.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+}
+private
+extension String {
+    func ranges(of regEx: String) -> [Range<Index>] {
+        var ranges: [Range<Index>] = []
+        
+        while let range = range(
+            of: regEx,
+            options: .regularExpression,
+            range: (ranges.last?.upperBound ?? startIndex)..<endIndex
+            ) {
+                ranges.append(range)
+        }
+        return ranges
     }
 }
